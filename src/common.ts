@@ -5,6 +5,7 @@ import {
     RewardToken,
     DexAmmProtocol,
     LiquidityPool,
+    Tracker,
 } from "../generated/schema"
 import {
     Network,
@@ -15,6 +16,18 @@ import {
     FACTORY_ADDRESS,
 } from "./constants"
 
+export function getOrCreateTracker(): Tracker {
+    let tracker = Tracker.load(FACTORY_ADDRESS)
+    if (tracker != null) {
+        return tracker as Tracker
+    }
+
+    tracker = new Tracker(FACTORY_ADDRESS)
+    tracker.tokensCount = 0
+    tracker.poolsCount = 0
+    tracker.save()
+    return tracker as Tracker
+}
 
 export function getOrCreateERC20Token(address: Address): Token {
     let addressHex = address.toHexString()
@@ -38,6 +51,10 @@ export function getOrCreateERC20Token(address: Address): Token {
         token.decimals = tryDecimals.value
     }
     token.save()
+
+    let tracker = getOrCreateTracker()
+    tracker.tokensCount = tracker.tokensCount + 1
+    tracker.save()
 
     return token as Token
 }
@@ -101,13 +118,17 @@ export function createDexAmmLiquidityPool(
     pool.totalValueLockedUSD = BIGDECIMAL_ZERO
     pool.totalVolumeUSD = BIGDECIMAL_ZERO
     pool.inputTokenBalances = [BIGINT_ZERO, BIGINT_ZERO]
-    pool.outputTokenSupply = BIGINT_ZERO 
+    pool.outputTokenSupply = BIGINT_ZERO
     pool.outputTokenPriceUSD = BIGDECIMAL_ZERO
     pool.createdTimestamp = event.block.timestamp
     pool.createdBlockNumber = event.block.number
-    pool.name = protocol.name + " " + lpToken.symbol
-    pool.symbol = lpToken.symbol
+    pool.name = token0.id + "-" + token1.id
+    pool.symbol = token0.id + "-" + token1.id
     pool.save()
+
+    let tracker = getOrCreateTracker()
+    tracker.poolsCount = tracker.poolsCount + 1
+    tracker.save()
 
     return pool as LiquidityPool
 }
