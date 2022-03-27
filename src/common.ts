@@ -10,12 +10,13 @@ import {
     Network,
     ProtocolType,
     RewardTokenType,
+    BIGINT_ZERO,
+    BIGDECIMAL_ZERO,
+    FACTORY_ADDRESS,
 } from "./constants"
 
-const getUuid = require('uuid-by-string')
 
-
-export function getOrCreateERC20Token(event: ethereum.Event, address: Address): Token {
+export function getOrCreateERC20Token(address: Address): Token {
     let addressHex = address.toHexString()
     let token = Token.load(addressHex)
     if (token != null) {
@@ -41,7 +42,7 @@ export function getOrCreateERC20Token(event: ethereum.Event, address: Address): 
     return token as Token
 }
 
-export function getOrCreateERC20RewardToken(event: ethereum.Event, address: Address): RewardToken {
+export function getOrCreateERC20RewardToken(address: Address): RewardToken {
     let addressHex = address.toHexString()
     let rewardToken = RewardToken.load(addressHex)
     if (rewardToken != null) {
@@ -68,16 +69,16 @@ export function getOrCreateERC20RewardToken(event: ethereum.Event, address: Addr
     return rewardToken as RewardToken
 }
 
-export function getOrCreateEthereumDexAmmProtocol(name: string, slug: string): DexAmmProtocol {
-    let uuidHash = getUuid(slug);  // Hash the slug into an UUID
-    let protocol = DexAmmProtocol.load(uuidHash)
+export function getOrCreateDex(): DexAmmProtocol {
+    let protocol = DexAmmProtocol.load(FACTORY_ADDRESS)
     if (protocol != null) {
         return protocol as DexAmmProtocol
     }
 
-    protocol = new DexAmmProtocol(uuidHash)
-    protocol.name = name
-    protocol.slug = slug
+    protocol = new DexAmmProtocol(FACTORY_ADDRESS)
+    protocol.name = "Sushiswap"
+    protocol.slug = "sushiswap"
+    protocol.version = "1.0.0"
     protocol.network = Network.ETHEREUM
     protocol.type = ProtocolType.EXCHANGE
     protocol.save()
@@ -86,21 +87,26 @@ export function getOrCreateEthereumDexAmmProtocol(name: string, slug: string): D
 }
 
 export function createDexAmmLiquidityPool(
+    event: ethereum.Event,
     address: Address,
     protocol: DexAmmProtocol,
-    name: string,
-    symbol: string,
-    inputTokens: [Token],
-    outputToken: Token,
-    rewardTokens: [RewardToken]
+    token0: Token,
+    token1: Token,
+    lpToken: Token
 ) : LiquidityPool {
     let pool = new LiquidityPool(address.toHexString())
-    pool.name = name
-    pool.symbol = symbol
-    pool.protocol = protocol
-    pool.inputTokens = inputTokens
-    pool.outputToken = outputToken
-    pool.rewardTokens = rewardTokens
+    pool.protocol = protocol.id
+    pool.inputTokens = [token0.id, token1.id]
+    pool.outputToken = lpToken.id
+    pool.totalValueLockedUSD = BIGDECIMAL_ZERO
+    pool.totalVolumeUSD = BIGDECIMAL_ZERO
+    pool.inputTokenBalances = [BIGINT_ZERO, BIGINT_ZERO]
+    pool.outputTokenSupply = BIGINT_ZERO 
+    pool.outputTokenPriceUSD = BIGDECIMAL_ZERO
+    pool.createdTimestamp = event.block.timestamp
+    pool.createdBlockNumber = event.block.number
+    pool.name = protocol.name + " " + lpToken.symbol
+    pool.symbol = lpToken.symbol
     pool.save()
 
     return pool as LiquidityPool

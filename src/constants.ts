@@ -1,3 +1,5 @@
+import { BigDecimal, BigInt } from '@graphprotocol/graph-ts';
+
 export namespace Network {
     export const AVALANCHE = "AVALANCHE"
     export const AURORA = "AURORA"
@@ -26,3 +28,7 @@ export namespace RewardTokenType {
     export const DEPOSIT = "DEPOSIT"
     export const BORROW = "BORROW"
 }
+
+export const BIGINT_ZERO = BigInt.fromI32(0);
+export const BIGDECIMAL_ZERO = new BigDecimal(BIGINT_ZERO);
+export const FACTORY_ADDRESS = "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac"
