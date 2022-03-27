@@ -1,27 +1,59 @@
 specVersion: 0.0.2
-description: Gravatar for Ethereum
-repository: https://github.com/graphprotocol/example-subgraph
+description: Sushiswap Subgraph
+repository: https://github.com/meditativeape/sushiswap-subgraph
 schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum/contract
-    name: Gravity
+    name: UniswapV2Factory
     network: mainnet
     source:
-      address: '0x2E645469f354BB4F5c8a05B3b30A929361cf77eC'
-      abi: Gravity
+      address: '0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac'
+      abi: UniswapV2Factory
+      startBlock: 10794228
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
       language: wasm/assemblyscript
+      file: ./src/uniswapV2Factory.ts
       entities:
-        - Gravatar
+        - Token
+        - DexAmmProtocol
+        - LiquidityPool
       abis:
-        - name: Gravity
-          file: ./abis/Gravity.json
+        - name: ERC20
+          file: ./abis/IERC20.json
+        - name: UniswapV2Factory
+          file: ./abis/IUniswapV2Factory.json
       eventHandlers:
-        - event: NewGravatar(uint256,address,string,string)
-          handler: handleNewGravatar
-        - event: UpdatedGravatar(uint256,address,string,string)
-          handler: handleUpdatedGravatar
-      file: ./src/mapping.ts
+        - event: PairCreated(indexed address,indexed address,address,uint256)
+          handler: handlePairCreated
+templates:
+  - kind: ethereum/contract
+    name: UniswapV2Pair
+    network: mainnet
+    source:
+      abi: UniswapV2Pair
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/uniswapV2Pair.ts
+      entities:
+        - Event
+      abis:
+        - name: ERC20
+          file: ./abis/IERC20.json
+        - name: UniswapV2Factory
+          file: ./abis/IUniswapV2Factory.json
+        - name: UniswapV2Pair
+          file: ./abis/IUniswapV2Pair.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+        - event: Sync(uint112,uint112)
+          handler: handleSync
+        - event: Mint(indexed address,uint256,uint256)
+          handler: handleMint
+        - event: Burn(indexed address,uint256,uint256,indexed address)
+          handler: handleBurn
